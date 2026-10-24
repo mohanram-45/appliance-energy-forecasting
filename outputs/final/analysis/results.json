@@ -26,7 +26,7 @@
   ],
   "sarimax_selection_val_RMSE": 400.85507529422966,
   "best_model_by_pooled_test_RMSE": "sarimax",
-  "chronos_included": false,
+  "chronos_included": true,
   "test_metrics": {
     "sarimax": {
       "pooled_RMSE": 375.185,
@@ -35,6 +35,14 @@
       "window_MASE_mean": 0.675,
       "window_RMSE_median": 250.542,
       "skill_vs_reference_pct": 10.392
+    },
+    "chronos": {
+      "pooled_RMSE": 405.762,
+      "pooled_MAE": 197.719,
+      "pooled_sMAPE": 27.78,
+      "window_MASE_mean": 0.613,
+      "window_RMSE_median": 277.303,
+      "skill_vs_reference_pct": 3.089
     },
     "mean": {
       "pooled_RMSE": 418.697,
@@ -104,7 +112,29 @@
       "block": 3,
       "n_boot": 10000,
       "wilcoxon_p": 0.0699,
-      "dm_p_holm": 0.5981,
+      "dm_p_holm": 0.8972,
+      "ci_excludes_zero": false,
+      "evidence": "not distinguishable"
+    },
+    {
+      "model_A": "chronos",
+      "model_B": "xgboost_direct",
+      "n_windows": 30,
+      "rmse_A": 405.7615,
+      "rmse_B": 422.2023,
+      "win_rate_A": 0.5333,
+      "dm_stat": -0.3544,
+      "dm_p": 0.7256,
+      "nw_lag": 3,
+      "mean_loss_diff": -13612.36,
+      "rmse_diff": -16.4408,
+      "ci95_low": -128.3952,
+      "ci95_high": 60.54,
+      "rel_diff_pct": -3.894,
+      "block": 3,
+      "n_boot": 10000,
+      "wilcoxon_p": 0.7457,
+      "dm_p_holm": 1.0,
       "ci_excludes_zero": false,
       "evidence": "not distinguishable"
     },
@@ -126,9 +156,31 @@
       "block": 3,
       "n_boot": 10000,
       "wilcoxon_p": 0.0879,
-      "dm_p_holm": 0.9366,
+      "dm_p_holm": 1.0,
       "ci_excludes_zero": false,
       "evidence": "not distinguishable"
+    },
+    {
+      "model_A": "sarimax",
+      "model_B": "chronos",
+      "n_windows": 30,
+      "rmse_A": 375.1846,
+      "rmse_B": 405.7615,
+      "win_rate_A": 0.6667,
+      "dm_stat": -2.8947,
+      "dm_p": 0.0071,
+      "nw_lag": 3,
+      "mean_loss_diff": -23878.9698,
+      "rmse_diff": -30.577,
+      "ci95_low": -45.3049,
+      "ci95_high": -10.8448,
+      "rel_diff_pct": -7.5357,
+      "block": 3,
+      "n_boot": 10000,
+      "wilcoxon_p": 0.0732,
+      "dm_p_holm": 0.0357,
+      "ci_excludes_zero": true,
+      "evidence": "A better (significant after Holm, CI excludes 0)"
     },
     {
       "model_A": "sarimax",
@@ -151,9 +203,38 @@
       "dm_p_holm": 0.0,
       "ci_excludes_zero": true,
       "evidence": "A better (significant after Holm, CI excludes 0)"
+    },
+    {
+      "model_A": "chronos",
+      "model_B": "mean",
+      "n_windows": 30,
+      "rmse_A": 405.7615,
+      "rmse_B": 418.6968,
+      "win_rate_A": 0.6667,
+      "dm_stat": -1.3143,
+      "dm_p": 0.1991,
+      "nw_lag": 3,
+      "mean_loss_diff": -10664.6264,
+      "rmse_diff": -12.9353,
+      "ci95_low": -39.8492,
+      "ci95_high": 7.3124,
+      "rel_diff_pct": -3.0894,
+      "block": 3,
+      "n_boot": 10000,
+      "wilcoxon_p": 0.0066,
+      "dm_p_holm": 0.7962,
+      "ci_excludes_zero": false,
+      "evidence": "not distinguishable"
     }
   ],
   "coverage": [
+    {
+      "model": "chronos",
+      "nominal": 0.8,
+      "coverage": 0.5806,
+      "mean_width": 230.1553,
+      "n": 720
+    },
     {
       "model": "sarimax",
       "nominal": 0.95,
@@ -163,15 +244,15 @@
     }
   ],
   "shap_top10": {
-    "hour": 86.0270004272461,
-    "y_same_hour_1d": 54.28099822998047,
-    "hour_sin": 49.284000396728516,
-    "y_same_hour_1w": 34.16999816894531,
-    "hour_cos": 33.47999954223633,
-    "roll_mean_168": 33.380001068115234,
-    "y_t-0": 31.16200065612793,
-    "roll_std_168": 29.29599952697754,
-    "roll_mean_24": 24.149999618530273,
-    "roll_std_24": 22.452999114990234
+    "hour": 87.73699951171875,
+    "y_same_hour_1d": 55.58399963378906,
+    "hour_sin": 50.23400115966797,
+    "roll_mean_168": 35.104000091552734,
+    "y_same_hour_1w": 33.25899887084961,
+    "hour_cos": 31.933000564575195,
+    "y_t-0": 30.402999877929688,
+    "roll_std_168": 27.948999404907227,
+    "roll_mean_24": 24.698999404907227,
+    "roll_std_24": 22.187000274658203
   }
 }
