@@ -1,0 +1,4 @@
+model,origin,fit_data_end,history_rows,train_rows,seconds,converged,n_warnings,warnings
+sarimax,2016-04-12 23:00:00,2016-04-12 23:00:00,2215,1080,11.243,True,0.0,
+xgboost,2016-04-12 23:00:00,2016-04-12 23:00:00,2215,2047,0.584,,,
+xgboost_direct,2016-04-12 23:00:00,2016-04-12 23:00:00,2215,2035,15.736,,,

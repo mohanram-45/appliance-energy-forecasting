@@ -1,4 +1,4 @@
-"""Part 1 - data acquisition and preparation.
+"""Data acquisition, hourly aggregation and completeness checks.
 
 Downloads the UCI Appliances Energy Prediction dataset (10-minute sampling),
 parses the timestamp, checks for missing values and resamples to hourly.
@@ -66,6 +66,118 @@ def to_hourly(df: pd.DataFrame) -> pd.DataFrame:
     return hourly
 
 
+# --------------------------------------------------------------------------
+# Completeness of hourly bins (Phase 2A fix for the partial final hour)
+# --------------------------------------------------------------------------
+ENERGY_COLS = ("Appliances", "lights")
+
+
+def infer_readings_per_hour(timestamps) -> tuple[int, pd.Timedelta]:
+    """Infer the raw sampling interval and how many readings fill one hour.
+
+    The interval is the most common gap between consecutive timestamps. It
+    must divide an hour exactly, otherwise "a complete hour" is undefined.
+    """
+    ts = pd.Series(pd.to_datetime(pd.Index(timestamps))).sort_values()
+    diffs = ts.diff().dropna()
+    if diffs.empty:
+        raise ValueError("Need at least two timestamps to infer sampling.")
+    step = diffs.mode().iloc[0]
+    hour = pd.Timedelta(hours=1)
+    if step <= pd.Timedelta(0) or hour % step != pd.Timedelta(0):
+        raise ValueError(f"Sampling interval {step} does not divide one hour.")
+    return int(hour / step), step
+
+
+def to_hourly_checked(df: pd.DataFrame, target: str = config.TARGET):
+    """Aggregate raw readings to hourly AND flag incomplete hours.
+
+    Returns ``(hourly, counts, expected)`` where ``counts`` is the number of
+    non-missing target readings that fell in each hourly bin (0 for an empty
+    bin) and ``expected`` is the number of readings in a full hour.
+
+    Why this matters: energy columns are *summed*, so an hour built from 1 of
+    6 readings understates consumption by ~5/6. Averaged sensor columns are
+    still unbiased means of the readings that exist.
+    """
+    raw = df.copy()
+    raw["date"] = pd.to_datetime(raw["date"])
+    if raw["date"].duplicated().any():
+        n = int(raw["date"].duplicated().sum())
+        raise ValueError(f"{n} duplicate raw timestamps; resolve before use.")
+    expected, _step = infer_readings_per_hour(raw["date"])
+    hourly = to_hourly(raw)  # unchanged aggregation rules
+    counts = (raw.set_index("date").sort_index()[target]
+              .resample(config.FREQ).count()
+              .reindex(hourly.index, fill_value=0))
+    return hourly, counts, expected
+
+
+def drop_incomplete_hours(hourly: pd.DataFrame, counts: pd.Series,
+                          expected: int) -> tuple[pd.DataFrame, dict]:
+    """Exclude hours with fewer than ``expected`` readings from modelling.
+
+    * Incomplete hours at the start/end of the series are trimmed away.
+    * Incomplete hours in the interior cannot be deleted without breaking the
+      regular hourly grid that lags rely on, so their energy columns are set
+      to NaN. Forecast origins whose history or target window touches such an
+      hour are then ineligible (see ``protocol.eligible_origins``).
+    """
+    counts = counts.reindex(hourly.index, fill_value=0)
+    incomplete = counts < expected
+    complete_idx = hourly.index[~incomplete.values]
+    if len(complete_idx) == 0:
+        raise ValueError("No complete hours in the data.")
+    first, last = complete_idx.min(), complete_idx.max()
+
+    out = hourly.loc[first:last].copy()
+    interior = incomplete.loc[first:last]
+    for col in ENERGY_COLS:
+        if col in out.columns and interior.any():  # keep dtype if nothing to mask
+            out[col] = out[col].astype(float)
+            out.loc[interior.values, col] = np.nan
+
+    edge_mask = incomplete & ((hourly.index < first) | (hourly.index > last))
+    report = {
+        "expected_readings_per_hour": int(expected),
+        "hourly_bins_before": int(len(hourly)),
+        "hourly_bins_after": int(len(out)),
+        "incomplete_hours_total": int(incomplete.sum()),
+        "incomplete_hours_trimmed_at_edges": int(edge_mask.sum()),
+        "incomplete_hours_masked_interior": int(interior.sum()),
+        "complete_hours_used": int((~interior).sum()),
+        "incomplete_hours": {str(ts): int(c)
+                             for ts, c in counts[incomplete].items()},
+        "first_hour": str(first), "last_hour": str(last),
+    }
+    return out, report
+
+
+def load_checked(force: bool = False, synthetic: bool = False,
+                 n_synthetic_days: int = 137):
+    """Strict loader for the backtest: no silent synthetic fallback.
+
+    Returns ``(hourly, report)``. Covariates are NOT interpolated, so no value
+    is ever filled in from the future; missing energy stays NaN.
+    """
+    if synthetic:
+        hourly = make_synthetic(n_days=n_synthetic_days)
+        report = {"expected_readings_per_hour": None, "source": "synthetic",
+                  "hourly_bins_before": len(hourly),
+                  "hourly_bins_after": len(hourly),
+                  "incomplete_hours_total": 0,
+                  "incomplete_hours_trimmed_at_edges": 0,
+                  "incomplete_hours_masked_interior": 0,
+                  "complete_hours_used": len(hourly), "incomplete_hours": {}}
+        return hourly, report
+    raw = download(force=force)
+    hourly, counts, expected = to_hourly_checked(raw)
+    hourly, report = drop_incomplete_hours(hourly, counts, expected)
+    report["source"] = config.RAW_CSV.relative_to(config.ROOT).as_posix()
+    report["raw_rows"] = int(len(raw))
+    return hourly.asfreq(config.FREQ), report
+
+
 def missing_report(df: pd.DataFrame) -> pd.Series:
     """Count missing values per column plus any gaps in the hourly index."""
     gaps = pd.date_range(df.index.min(), df.index.max(), freq=config.FREQ)
@@ -75,15 +187,33 @@ def missing_report(df: pd.DataFrame) -> pd.Series:
     return report
 
 
-def load(force: bool = False, synthetic: bool = False) -> pd.DataFrame:
-    """One-call entry point: return the cleaned hourly dataframe."""
+def load(force: bool = False, synthetic: bool = False,
+         drop_incomplete: bool = True) -> pd.DataFrame:
+    """One-call entry point used by the legacy single-window pipeline.
+
+    Phase 2A change: hours with fewer readings than a full hour are excluded
+    (``drop_incomplete=True``). On the UCI file this removes exactly one bin,
+    2016-05-27 18:00, which held 1 of 6 readings. Pass
+    ``drop_incomplete=False`` to reproduce the historical (pre-fix) series.
+    Energy columns are never interpolated; covariates are, as before.
+    """
     if synthetic:
         return make_synthetic()
     try:
         raw = download(force=force)
-        hourly = to_hourly(raw)
-        # forward-fill the handful of gaps a resample can introduce
-        hourly = hourly.asfreq(config.FREQ).interpolate(limit_direction="both")
+        if drop_incomplete:
+            hourly, counts, expected = to_hourly_checked(raw)
+            hourly, report = drop_incomplete_hours(hourly, counts, expected)
+            print(f"[data] removed {report['incomplete_hours_total']} "
+                  f"incomplete hour(s): {report['incomplete_hours']}",
+                  file=sys.stderr)
+        else:
+            hourly = to_hourly(raw)
+        hourly = hourly.asfreq(config.FREQ)
+        cov = [c for c in hourly.columns if c not in ENERGY_COLS]
+        hourly[cov] = hourly[cov].interpolate(limit_direction="both")
+        if not drop_incomplete:  # historical behaviour: interpolate everything
+            hourly = hourly.interpolate(limit_direction="both")
         return hourly
     except Exception as e:
         print(f"[data] falling back to synthetic data: {e}", file=sys.stderr)
@@ -110,7 +240,7 @@ def make_synthetic(n_days: int = 137) -> pd.DataFrame:
     t1 = 20 + 2 * np.sin(2 * np.pi * (t % 24) / 24) + rng.normal(0, 0.5, len(idx))
     rh1 = 40 + rng.normal(0, 3, len(idx))
 
-    return pd.DataFrame(
+    out = pd.DataFrame(
         {
             "Appliances": appliances,
             "lights": rng.integers(0, 40, len(idx)).astype(float),
@@ -123,3 +253,7 @@ def make_synthetic(n_days: int = 137) -> pd.DataFrame:
         },
         index=idx,
     )
+    # Phase 2B: Visibility completes the outdoor-weather set used by the
+    # weather_oracle scenario. Drawn last so all other columns are unchanged.
+    out["Visibility"] = np.clip(40 + rng.normal(0, 10, len(idx)), 1, 66)
+    return out

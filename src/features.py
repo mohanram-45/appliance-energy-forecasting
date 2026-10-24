@@ -1,4 +1,4 @@
-"""Part 5 - covariate / feature engineering.
+"""Covariate / feature engineering.
 
 Turns the hourly dataframe into a supervised-learning matrix. Feature groups:
 
@@ -62,6 +62,36 @@ def build_feature_frame(df: pd.DataFrame, dropna: bool = True) -> pd.DataFrame:
     out = add_rolling_features(out)
     if dropna:
         out = out.dropna()
+    return out
+
+
+def target_history_features(y_past: pd.Series, ts, target=TARGET,
+                            lags=LAGS, windows=ROLL_WINDOWS) -> dict:
+    """Lag / rolling features for ONE timestamp from strictly earlier values.
+
+    Produces exactly the values ``add_lag_features`` and
+    ``add_rolling_features`` give for row ``ts`` of a regular hourly frame,
+    but refuses to run if ``y_past`` contains ``ts`` or anything later. The
+    recursive forecaster calls this with history + its own earlier
+    predictions, so ground truth after the origin cannot reach a feature.
+    """
+    ts = pd.Timestamp(ts)
+    if len(y_past) and y_past.index.max() >= ts:
+        raise AssertionError(
+            f"leakage guard: series passed for {ts} contains values at/after it")
+    hour = pd.Timedelta(hours=1)
+    out = {}
+    for lag in lags:
+        out[f"{target}_lag{lag}"] = y_past.get(ts - lag * hour, np.nan)
+    for w in windows:
+        vals = y_past.reindex(pd.date_range(ts - w * hour, periods=w,
+                                            freq="h")).to_numpy(dtype=float)
+        if np.isnan(vals).any():
+            out[f"{target}_rollmean{w}"] = np.nan
+            out[f"{target}_rollstd{w}"] = np.nan
+        else:
+            out[f"{target}_rollmean{w}"] = float(vals.mean())
+            out[f"{target}_rollstd{w}"] = float(vals.std(ddof=1))
     return out
 
 

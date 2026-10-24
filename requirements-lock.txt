@@ -1,0 +1,24 @@
+# Exact versions of the verified environment (Windows 11, Anaconda Python 3.12.7,
+# Intel i7-10750H) used for the Phase 2B local verification. The final
+# experiment's non-Chronos stages were run on Linux with these same versions
+# (Python 3.12); Chronos ran on the Windows machine.
+#   python -m pip install -r requirements-lock.txt
+pandas==2.2.2
+numpy==1.26.4
+scipy==1.13.1
+statsmodels==0.14.2
+scikit-learn==1.5.1
+xgboost==3.4.0
+matplotlib==3.9.2
+requests==2.34.2
+pytest==7.4.4
+# Chronos (optional; install the CPU build of torch first on Windows:
+#   python -m pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cpu)
+torch==2.11.0
+chronos-forecasting==2.3.1
+transformers==5.6.2
+accelerate==1.14.0
+huggingface_hub==1.11.0
+safetensors==0.7.0
+tokenizers==0.22.2
+einops==0.8.2

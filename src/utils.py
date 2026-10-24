@@ -59,7 +59,7 @@ def train_test_split(series: pd.Series, horizon: int = config.HORIZON):
 
 
 def split_days(df: pd.DataFrame, test_days: int = config.ML_TEST_DAYS):
-    """Hold out the final `test_days` days (used by the ML model, Part 6)."""
+    """Hold out the final `test_days` days (used by the legacy XGBoost run)."""
     cutoff = df.index.max() - pd.Timedelta(days=test_days)
     return df[df.index <= cutoff], df[df.index > cutoff]
 

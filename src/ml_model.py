@@ -1,4 +1,4 @@
-"""Part 6 - feature-based gradient-boosting model (XGBoost).
+"""Feature-based gradient-boosting model (XGBoost), legacy single-window version.
 
 The model predicts the hourly target from the engineered features. It is
 evaluated over the final 14 days (rolling one-step), and a genuine 24-hour
@@ -52,7 +52,8 @@ def _recursive_forecast(model, feat_cols, history: pd.DataFrame,
 
 
 def run(df, horizon=config.HORIZON, test_days=config.ML_TEST_DAYS):
-    """End-to-end Part 6. Returns forecast + metrics + feature importances."""
+    """Legacy end-to-end XGBoost run. Returns forecast + metrics + feature importances."""
+    config.assert_legacy_write_allowed("ml_model.run")
     frame = F.build_feature_frame(df)
     feat_cols = F.feature_columns(frame)
 

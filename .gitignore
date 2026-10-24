@@ -19,3 +19,10 @@ Thumbs.db
 # Office temp / lock files (e.g. ~$Report.docx)
 ~$*
 *.tmp
+
+# Local-only material (machine paths, personal notes) - never published
+outputs/verification/
+_private/
+
+# Smoke-test / ad-hoc backtest runs (the published results are outputs/final/)
+outputs/backtest/

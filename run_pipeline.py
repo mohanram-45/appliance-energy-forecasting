@@ -21,12 +21,19 @@ def main():
                     help="offline dev only: substitute seasonal-naive if "
                          "Chronos cannot run (NOT for final results)")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--overwrite-legacy", action="store_true",
+                    help="deliberately replace the committed historical "
+                         "results in outputs/metrics and outputs/figures")
     args = ap.parse_args()
+    if args.overwrite_legacy:
+        import os
+        os.environ[config.ALLOW_LEGACY_ENV] = "1"
+    config.assert_legacy_write_allowed("run_pipeline.py")
 
     metrics = {}
 
-    # ---- Part 1: data + EDA ------------------------------------------------
-    print("\n== Part 1: load, resample, EDA ==")
+    # ---- data + EDA ------------------------------------------------
+    print("\n== load, resample, EDA ==")
     df = data.load(synthetic=args.synthetic)
     print(df.shape, "hourly rows;", df.index.min(), "->", df.index.max())
     print("missing values:\n", data.missing_report(df).to_string())
@@ -36,8 +43,8 @@ def main():
     y = df[config.TARGET]
     train, test = y.iloc[:-config.HORIZON], y.iloc[-config.HORIZON:]
 
-    # ---- Part 3: benchmarks ------------------------------------------------
-    print("\n== Part 3: benchmark models ==")
+    # ---- benchmarks ------------------------------------------------
+    print("\n== benchmark models ==")
     bench = benchmarks.run_all(train, test)
     forecasts = {}
     for name, (fc, m) in bench.items():
@@ -47,8 +54,8 @@ def main():
     best_bench = min(bench, key=lambda k: bench[k][1]["RMSE"])
     print("  strongest benchmark:", best_bench)
 
-    # ---- Part 4: SARIMAX ---------------------------------------------------
-    print("\n== Part 4: SARIMAX (AIC grid search) ==")
+    # ---- SARIMAX ---------------------------------------------------
+    print("\n== SARIMAX (AIC grid search) ==")
     sx = sarimax_model.run(df, fast=args.fast, verbose=args.verbose)
     metrics["SARIMAX"] = sx["metrics"]
     forecasts["SARIMAX"] = sx["forecast"]
@@ -58,8 +65,8 @@ def main():
                   "SARIMAX 24h forecast", "10_sarimax_forecast.png",
                   lower=sx["lower"], upper=sx["upper"])
 
-    # ---- Parts 5-6: features + XGBoost ------------------------------------
-    print("\n== Parts 5-6: features + XGBoost ==")
+    # ---- features + XGBoost ------------------------------------
+    print("\n== features + XGBoost ==")
     xgb = ml_model.run(df)
     metrics["XGBoost"] = xgb["metrics"]
     forecasts["XGBoost"] = xgb["forecast"]
@@ -69,9 +76,9 @@ def main():
     plot_forecast(xgb["train_tail"], xgb["test"], xgb["forecast"],
                   "XGBoost 24h forecast", "11_xgb_forecast.png")
 
-    # ---- Part 7: foundation model -----------------------------------------
+    # ---- foundation model -----------------------------------------
     if not args.no_foundation:
-        print("\n== Part 7: Chronos foundation model ==")
+        print("\n== Chronos foundation model ==")
         fm = foundation.run(df, allow_fallback=args.allow_chronos_fallback)
         metrics[fm["name"]] = fm["metrics"]
         forecasts[fm["name"]] = fm["forecast"]
@@ -81,8 +88,8 @@ def main():
                       f"{fm['name']} 24h forecast", "12_chronos_forecast.png",
                       lower=fm["lower"], upper=fm["upper"])
 
-    # ---- Part 8: evaluation ------------------------------------------------
-    print("\n== Part 8: evaluation ==")
+    # ---- evaluation ------------------------------------------------
+    print("\n== evaluation ==")
     comparison = evaluate.comparison_table(metrics)
     evaluate.all_forecasts_plot(test, forecasts, y)
     evaluate.error_diagnostics(test, forecasts, best_bench)

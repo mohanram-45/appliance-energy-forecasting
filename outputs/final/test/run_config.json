@@ -1,0 +1,140 @@
+{
+  "partition": "test",
+  "scenario": "operational",
+  "operationally_valid": true,
+  "retraining_policy": "fixed: each trainable model fitted once on all data up to the first origin of the partition",
+  "horizon": 24,
+  "origins": [
+    "2016-04-26 23:00:00",
+    "2016-04-27 23:00:00",
+    "2016-04-28 23:00:00",
+    "2016-04-29 23:00:00",
+    "2016-04-30 23:00:00",
+    "2016-05-01 23:00:00",
+    "2016-05-02 23:00:00",
+    "2016-05-03 23:00:00",
+    "2016-05-04 23:00:00",
+    "2016-05-05 23:00:00",
+    "2016-05-06 23:00:00",
+    "2016-05-07 23:00:00",
+    "2016-05-08 23:00:00",
+    "2016-05-09 23:00:00",
+    "2016-05-10 23:00:00",
+    "2016-05-11 23:00:00",
+    "2016-05-12 23:00:00",
+    "2016-05-13 23:00:00",
+    "2016-05-14 23:00:00",
+    "2016-05-15 23:00:00",
+    "2016-05-16 23:00:00",
+    "2016-05-17 23:00:00",
+    "2016-05-18 23:00:00",
+    "2016-05-19 23:00:00",
+    "2016-05-20 23:00:00",
+    "2016-05-21 23:00:00",
+    "2016-05-22 23:00:00",
+    "2016-05-23 23:00:00",
+    "2016-05-24 23:00:00",
+    "2016-05-25 23:00:00"
+  ],
+  "partitions": {
+    "data_start": "2016-01-11 17:00:00",
+    "data_end": "2016-05-27 17:00:00",
+    "train_end": "2016-04-12 23:00:00",
+    "validation": {
+      "n_origins": 14,
+      "first_origin": "2016-04-12 23:00:00",
+      "last_origin": "2016-04-25 23:00:00",
+      "first_target": "2016-04-13 00:00:00",
+      "last_target": "2016-04-26 23:00:00"
+    },
+    "test": {
+      "n_origins": 30,
+      "first_origin": "2016-04-26 23:00:00",
+      "last_origin": "2016-05-25 23:00:00",
+      "first_target": "2016-04-27 00:00:00",
+      "last_target": "2016-05-26 23:00:00"
+    },
+    "notes": []
+  },
+  "models": {
+    "mean": {
+      "name": "mean",
+      "class": "_BenchmarkForecaster",
+      "trainable": false,
+      "deviations": []
+    },
+    "naive": {
+      "name": "naive",
+      "class": "_BenchmarkForecaster",
+      "trainable": false,
+      "deviations": []
+    },
+    "drift": {
+      "name": "drift",
+      "class": "_BenchmarkForecaster",
+      "trainable": false,
+      "deviations": []
+    },
+    "seasonal_naive_24": {
+      "name": "seasonal_naive_24",
+      "class": "_BenchmarkForecaster",
+      "trainable": false,
+      "deviations": []
+    },
+    "seasonal_naive_168": {
+      "name": "seasonal_naive_168",
+      "class": "_BenchmarkForecaster",
+      "trainable": false,
+      "deviations": []
+    },
+    "sarimax": {
+      "name": "sarimax",
+      "class": "SARIMAXForecaster",
+      "trainable": true,
+      "deviations": [
+        "Order (1, 1, 6)x(1, 0, 1, 24) from: outputs/final/sarimax_selection (training + validation only).",
+        "Exogenous T_out/RH_out removed: future weather is not known in the operational scenario.",
+        "Parameters estimated once per fit; at each origin the state is updated by Kalman filtering the observed history with fixed parameters (statsmodels results.apply(refit=False))."
+      ]
+    },
+    "xgboost_direct": {
+      "name": "xgboost_direct",
+      "class": "XGBoostDirect",
+      "trainable": true,
+      "deviations": [
+        "Direct strategy: 24 horizon-specific models with the original XGBoost hyper-parameters; no recursion.",
+        "Inputs: target history observable at the origin + calendar of the target hour."
+      ]
+    }
+  },
+  "runtime_s": 35.4,
+  "meta": {
+    "python": "3.12.3",
+    "platform": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+    "timestamp_utc": "2026-10-24T13:34:26.700900+00:00",
+    "pandas_version": "2.2.2",
+    "numpy_version": "1.26.4",
+    "statsmodels_version": "0.14.2",
+    "xgboost_version": "3.4.0",
+    "torch_version": "2.11.0+cu130",
+    "chronos_version": "2.3.1",
+    "git_commit": null,
+    "git_dirty": false
+  },
+  "decisions_from_validation": {
+    "xgboost_strategy": "xgboost_direct",
+    "xgboost_validation_RMSE": {
+      "xgboost": 447.26480968393946,
+      "xgboost_direct": 408.75240664884683
+    },
+    "reference_benchmark": "mean",
+    "benchmark_validation_RMSE": {
+      "mean": 451.8057043281877,
+      "naive": 511.2866007389966,
+      "drift": 511.2685616956537,
+      "seasonal_naive_24": 518.2462413435014,
+      "seasonal_naive_168": 481.88463102598286
+    },
+    "rule": "lowest pooled RMSE on the 14 validation origins; test unseen"
+  }
+}

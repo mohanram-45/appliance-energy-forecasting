@@ -1,0 +1,2 @@
+model,origin,fit_data_end,history_rows,train_rows,seconds,converged,n_warnings,warnings
+xgboost_direct,2016-04-26 23:00:00,2016-04-26 23:00:00,2551,2371,20.935,,,

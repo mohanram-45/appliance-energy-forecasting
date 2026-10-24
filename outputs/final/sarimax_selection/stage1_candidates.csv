@@ -1,0 +1,7 @@
+p,d,q,seasonal_order,status,converged,aic,n_warnings,warnings,error,seconds,maxiter,aic_rank_within_d
+1,0,6,"(1, 0, 1, 24)",converged,True,15395.710340292087,0,,,5.99,200,1.0
+2,0,6,"(1, 0, 1, 24)",converged,True,15396.385515650865,0,,,11.55,200,2.0
+1,1,6,"(1, 0, 1, 24)",converged,True,15381.353977510184,0,,,9.83,200,1.0
+0,1,6,"(1, 0, 1, 24)",converged,True,15386.014312582638,0,,,5.23,200,2.0
+4,2,6,"(1, 0, 1, 24)",converged,True,15449.778712818024,0,,,17.66,200,1.0
+5,2,5,"(1, 0, 1, 24)",converged,True,15453.642972132393,0,,,16.33,200,2.0

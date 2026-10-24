@@ -1,11 +1,11 @@
-"""Part 7 - time-series foundation model (Amazon Chronos).
+"""Time-series foundation model (Amazon Chronos).
 
 Chronos is a pretrained transformer that forecasts a series *zero-shot*: no
 task-specific training, just feed it the history. We use a lightweight
 checkpoint (``amazon/chronos-t5-small`` by default) that runs on a CPU-only
 laptop; the weights download from the Hugging Face hub on first use.
 
-Design decisions (per the assignment requirements):
+Design decisions:
   * No silent fallback. If Chronos cannot run, this module raises a clear
     error explaining the real reason instead of quietly substituting a naive
     forecast. A fallback is only used if the caller explicitly opts in with
@@ -52,20 +52,29 @@ def _import_chronos():
     return torch, BaseChronosPipeline
 
 
+# Loaded pipelines are cached per (model, device) so a rolling-origin backtest
+# loads the weights once instead of once per origin. Forecast behaviour is
+# unchanged.
+_PIPELINE_CACHE: dict = {}
+
+
 def _chronos_forecast(context: np.ndarray, horizon: int,
-                      model_name: str = MODEL_NAME):
+                      model_name: str = MODEL_NAME, num_samples: int = 20):
     """Return (median, low10, high90, device) using Chronos quantiles."""
     torch, BaseChronosPipeline = _import_chronos()
 
-    # deterministic
+    # deterministic (re-seeded on every call, so each origin is reproducible)
     np.random.seed(config.RANDOM_STATE)
     torch.manual_seed(config.RANDOM_STATE)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.float32
     try:
-        pipe = BaseChronosPipeline.from_pretrained(
-            model_name, device_map=device, torch_dtype=dtype)
+        key = (model_name, device)
+        if key not in _PIPELINE_CACHE:
+            _PIPELINE_CACHE[key] = BaseChronosPipeline.from_pretrained(
+                model_name, device_map=device, torch_dtype=dtype)
+        pipe = _PIPELINE_CACHE[key]
     except Exception as e:
         raise RuntimeError(
             f"Failed to load Chronos model '{model_name}'. This usually means "
@@ -81,7 +90,8 @@ def _chronos_forecast(context: np.ndarray, horizon: int,
     # works for the default chronos-t5 checkpoint (which returns samples of
     # shape [num_series, num_samples, prediction_length]).
     try:
-        samples = pipe.predict(ctx, prediction_length=horizon, num_samples=20)
+        samples = pipe.predict(ctx, prediction_length=horizon,
+                               num_samples=num_samples)
         s = np.asarray(samples[0].cpu().numpy(), dtype=float)  # (num_samples, horizon)
         median = np.quantile(s, 0.5, axis=0)
         lo = np.quantile(s, 0.1, axis=0)
@@ -108,6 +118,7 @@ def run(df, horizon=config.HORIZON, model_name=MODEL_NAME,
         seasonal-naive forecast is substituted and clearly labelled - only for
         convenience during offline development, never for the final result.
     """
+    config.assert_legacy_write_allowed("foundation.run")
     y = df[config.TARGET].astype(float)
     train, test = y.iloc[:-horizon], y.iloc[-horizon:]
 

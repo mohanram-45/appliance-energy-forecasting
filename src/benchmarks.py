@@ -1,4 +1,4 @@
-"""Part 3 - benchmark forecasts (lecture 1 of the time-series content).
+"""Benchmark forecasts: mean, naive, seasonal naive (24 h / 168 h) and drift.
 
 Every model forecasts the next `horizon` hours from the training history.
 These simple methods set the bar every more complex model must beat.

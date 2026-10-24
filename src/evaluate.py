@@ -1,4 +1,4 @@
-"""Part 8 - evaluation, comparison table and diagnostic plots."""
+"""Legacy single-window evaluation: comparison table and diagnostic plots."""
 from __future__ import annotations
 
 import matplotlib
@@ -13,6 +13,7 @@ from .utils import save_fig
 
 def comparison_table(results: dict) -> pd.DataFrame:
     """results: {name: metrics_dict}. Sorted by RMSE (lower is better)."""
+    config.assert_legacy_write_allowed("evaluate.comparison_table")
     table = pd.DataFrame(results).T
     table = table.sort_values("RMSE")
     table.index.name = "model"

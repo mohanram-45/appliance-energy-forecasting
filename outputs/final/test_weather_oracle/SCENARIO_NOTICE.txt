@@ -1,0 +1,7 @@
+WEATHER-ORACLE SCENARIO - NOT A REALISTIC FORECAST RESULT
+
+These forecasts used OBSERVED outdoor weather for the target hours as a
+stand-in for a perfect weather forecast. That information is not
+available at the forecast origin. Treat every number in this folder as
+an upper bound on what weather information could add, never as
+operational accuracy, and never mix it with operational results.

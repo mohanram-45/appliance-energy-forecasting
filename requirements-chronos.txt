@@ -1,0 +1,10 @@
+# Optional: the Chronos foundation model (--models chronos, --stages chronos).
+# Large download: PyTorch (~200 MB CPU build) and, on first use, the
+# amazon/chronos-t5-small weights (~185 MB) from the Hugging Face hub.
+#
+# Windows / CPU-only - install the CPU build of torch first:
+#   python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   python -m pip install -r requirements-chronos.txt
+-r requirements.txt
+torch>=2.2
+chronos-forecasting>=1.4

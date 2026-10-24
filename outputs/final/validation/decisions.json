@@ -1,0 +1,16 @@
+{
+  "xgboost_strategy": "xgboost_direct",
+  "xgboost_validation_RMSE": {
+    "xgboost": 447.26480968393946,
+    "xgboost_direct": 408.75240664884683
+  },
+  "reference_benchmark": "mean",
+  "benchmark_validation_RMSE": {
+    "mean": 451.8057043281877,
+    "naive": 511.2866007389966,
+    "drift": 511.2685616956537,
+    "seasonal_naive_24": 518.2462413435014,
+    "seasonal_naive_168": 481.88463102598286
+  },
+  "rule": "lowest pooled RMSE on the 14 validation origins; test unseen"
+}

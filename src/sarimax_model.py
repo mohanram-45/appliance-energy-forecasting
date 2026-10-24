@@ -1,6 +1,6 @@
-"""Part 4 - SARIMAX with an AIC grid search.
+"""SARIMAX with an AIC grid search (original single-window implementation).
 
-Steps, following the brief:
+Steps:
   1. Assess stationarity (done in eda.py) and let the grid choose d/D.
   2. Loop over p in [0,6], d in [0,2], q in [0,6] and pick the model with
      the lowest AIC. A daily (m=24) seasonal component is included because
@@ -52,7 +52,7 @@ def param_grid(p_range=config.P_RANGE, d_range=config.D_RANGE,
                q_range=config.Q_RANGE):
     """Every (p, d, q) combination the grid search will attempt.
 
-    With the assignment ranges (p 0-6, d 0-2, q 0-6) this is exactly
+    With the original grid ranges (p 0-6, d 0-2, q 0-6) this is exactly
     7 * 3 * 7 = 147 combinations.
     """
     return list(itertools.product(p_range, d_range, q_range))
@@ -130,7 +130,8 @@ def forecast(res, horizon=config.HORIZON, exog_future=None):
 
 
 def run(df, horizon=config.HORIZON, use_exog=True, fast=False, verbose=False):
-    """End-to-end Part 4. Returns a dict with forecast, CI, metrics, order."""
+    """Legacy end-to-end SARIMAX run. Returns a dict with forecast, CI, metrics, order."""
+    config.assert_legacy_write_allowed("sarimax_model.run")
     y = df[config.TARGET].astype(float)
     train_full, test = y.iloc[:-horizon], y.iloc[-horizon:]
 

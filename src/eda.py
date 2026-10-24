@@ -1,4 +1,4 @@
-"""Part 1 - exploratory analysis and stationarity testing.
+"""Exploratory analysis and stationarity testing.
 
 Produces the initial time-series plots, a seasonal decomposition, ACF/PACF
 plots and the ADF + KPSS stationarity tests. All figures are written to
@@ -117,6 +117,7 @@ def stationarity_tests(series: pd.Series, label: str = "series") -> dict:
 
 def run(df: pd.DataFrame) -> pd.DataFrame:
     """Run every EDA step and return a tidy stationarity results table."""
+    config.assert_legacy_write_allowed("eda.run")
     overview_plots(df)
     decomposition(df)
     correlograms(df)
